@@ -1,0 +1,298 @@
+# m4-2
+
+```
+private async void Search_Click(object sender, RoutedEventArgs e)
+{
+    if(cancellationTokenSource != null)
+    {
+        // Already have an instance of the cancellation token source?
+        // This means the button has already been pressed!
+
+        cancellationTokenSource.Cancel();
+        cancellationTokenSource = null;
+
+        Search.Content = "Search";
+        return;
+    }
+
+    try
+    {
+
+        cancellationTokenSource = new CancellationTokenSource();
+        cancellationTokenSource.Token.Register(() =>
+        {
+            Notes.Text = "Cancellation requested";
+        });
+        Search.Content = "Cancel"; // Button text
+
+
+        BeforeLoadingStockData();
+
+        var identifiers = StockIdentifier.Text
+                                            .Split(',', ' ');
+
+        var service = new StockService();
+
+        var loadingTasks = new List<Task<IEnumerable<StockPrice>>>();
+
+        foreach (var identifier in identifiers)
+        {
+            var loadTask = service.GetStockPricesFor(identifier,
+                cancellationTokenSource.Token);
+
+            loadingTasks.Add(loadTask);
+                }
+
+                var timeoutTask = Task.Delay(120000);
+                var allStocksLoadingTask = Task.WhenAll(loadingTasks);
+
+                var completedTask = await Task.WhenAny(timeoutTask, 
+                    allStocksLoadingTask);
+
+                if(completedTask == timeoutTask)
+                {
+                    cancellationTokenSource.Cancel();
+                    throw new OperationCanceledException("Timeout!");
+                }
+
+                Stocks.ItemsSource = allStocksLoadingTask
+                    .Result
+                    .SelectMany(x => x);
+
+
+            }
+            catch (Exception ex)
+            {
+                Notes.Text = ex.Message;
+            }
+            finally
+            {
+                AfterLoadingStockData();
+
+                cancellationTokenSource = null;
+                Search.Content = "Search";
+            }
+        }
+```
+
+
+# m4-3
+
+```
+public class MockStockService : IStockService
+{
+    public Task<IEnumerable<StockPrice>> 
+        GetStockPricesFor(string stockIdentifier, 
+        CancellationToken cancellationToken)
+    {
+        var stocks = new List<StockPrice>
+        {
+            new StockPrice
+            {
+                Identifier = "MSFT",
+                Change = 0.5m,
+                ChangePercent = 0.75m
+            },
+            new StockPrice
+            {
+                Identifier = "MSFT",
+                Change = 0.5m,
+                ChangePercent = 0.75m
+            },
+            new StockPrice
+            {
+                Identifier = "GOOGL",
+                Change = 0.5m,
+                ChangePercent = 0.75m
+            },
+            new StockPrice
+            {
+                Identifier = "GOOGL",
+                Change = 0.5m,
+                ChangePercent = 0.75m
+            }
+        };
+
+        var task = Task.FromResult(stocks.Where(stock => stock.Identifier == stockIdentifier));
+        return task;
+    }
+}
+
+[TestClass]
+public class MockStockServiceTests
+{
+    [TestMethod]
+    public async Task Can_Load_All_MSFT_Stocks()
+    {
+        var service = new MockStockService();
+        var stocks = await service.GetStockPricesFor("MSFT",
+            CancellationToken.None);
+
+        Assert.AreEqual(stocks.Count(), 2);
+    }
+}
+
+private async void Search_Click(object sender, RoutedEventArgs e)
+{
+    if(cancellationTokenSource != null)
+    {
+        // Already have an instance of the cancellation token source?
+        // This means the button has already been pressed!
+
+        cancellationTokenSource.Cancel();
+        cancellationTokenSource = null;
+
+        Search.Content = "Search";
+        return;
+    }
+
+    try
+    {
+
+        cancellationTokenSource = new CancellationTokenSource();
+        cancellationTokenSource.Token.Register(() =>
+        {
+            Notes.Text = "Cancellation requested";
+        });
+        Search.Content = "Cancel"; // Button text
+
+
+        BeforeLoadingStockData();
+
+        var identifiers = StockIdentifier.Text
+                                            .Split(',', ' ');
+
+        var service = new MockStockService();
+
+        var loadingTasks = new List<Task<IEnumerable<StockPrice>>>();
+
+        foreach (var identifier in identifiers)
+        {
+            var loadTask = service.GetStockPricesFor(identifier,
+                cancellationTokenSource.Token);
+
+            loadingTasks.Add(loadTask);
+        }
+
+        var timeoutTask = Task.Delay(120000);
+        var allStocksLoadingTask = Task.WhenAll(loadingTasks);
+
+        var completedTask = await Task.WhenAny(timeoutTask, 
+            allStocksLoadingTask);
+
+        if(completedTask == timeoutTask)
+        {
+            cancellationTokenSource.Cancel();
+            throw new OperationCanceledException("Timeout!");
+        }
+
+        Stocks.ItemsSource = allStocksLoadingTask
+            .Result
+            .SelectMany(x => x);
+
+
+    }
+    catch (Exception ex)
+    {
+        Notes.Text = ex.Message;
+    }
+    finally
+    {
+        AfterLoadingStockData();
+
+        cancellationTokenSource = null;
+        Search.Content = "Search";
+    }
+}
+```
+
+
+# m4-4
+
+```
+private async void Search_Click(object sender, RoutedEventArgs e)
+{
+    if(cancellationTokenSource != null)
+    {
+        // Already have an instance of the cancellation token source?
+        // This means the button has already been pressed!
+
+        cancellationTokenSource.Cancel();
+        cancellationTokenSource = null;
+
+        Search.Content = "Search";
+        return;
+    }
+
+    try
+    {
+
+        cancellationTokenSource = new CancellationTokenSource();
+        cancellationTokenSource.Token.Register(() =>
+        {
+            Notes.Text = "Cancellation requested";
+        });
+        Search.Content = "Cancel"; // Button text
+
+
+        BeforeLoadingStockData();
+
+        var identifiers = StockIdentifier.Text
+                                            .Split(',', ' ');
+
+        var service = new StockService();
+
+        var loadingTasks = new List<Task<IEnumerable<StockPrice>>>();
+        var stocks = new ConcurrentBag<StockPrice>();
+
+        foreach (var identifier in identifiers)
+        {
+            var loadTask = service.GetStockPricesFor(identifier,
+                cancellationTokenSource.Token);
+
+            loadTask = loadTask.ContinueWith(t =>
+            {
+                var aFewStocks = t.Result.Take(5);
+
+                foreach(var stock in aFewStocks)
+                {
+                    stocks.Add(stock);
+                }
+
+                Dispatcher.Invoke(() => {
+                    Stocks.ItemsSource = stocks.ToArray();
+                });
+
+                return aFewStocks;
+            });
+
+            loadingTasks.Add(loadTask);
+        }
+
+        var timeoutTask = Task.Delay(120000);
+        var allStocksLoadingTask = Task.WhenAll(loadingTasks);
+
+        var completedTask = await Task.WhenAny(timeoutTask, 
+            allStocksLoadingTask);
+
+        if(completedTask == timeoutTask)
+        {
+            cancellationTokenSource.Cancel();
+            throw new OperationCanceledException("Timeout!");
+        }
+
+
+    }
+    catch (Exception ex)
+    {
+        Notes.Text = ex.Message;
+    }
+    finally
+    {
+        AfterLoadingStockData();
+
+        cancellationTokenSource = null;
+        Search.Content = "Search";
+    }
+}
+```

@@ -1,0 +1,133 @@
+# m2-1
+
+```
+private async void Search_Click(object sender, RoutedEventArgs e)
+{
+    BeforeLoadingStockData();
+
+    using (var client = new HttpClient())
+    {
+        var response = await client.GetAsync($"{API_URL}/{StockIdentifier.Text}");
+
+        var content = await response.Content.ReadAsStringAsync();
+
+        var data = JsonConvert.DeserializeObject<IEnumerable<StockPrice>>(content);
+
+        Stocks.ItemsSource = data;
+    }
+
+    AfterLoadingStockData();
+}
+```
+
+# m2-5
+private async void Search_Click(object sender, RoutedEventArgs e)
+{
+    BeforeLoadingStockData();
+
+    using (var client = new HttpClient())
+    {
+        var response = await client.GetAsync($"{API_URL}/{StockIdentifier.Text}");
+
+        var content = await response.Content.ReadAsStringAsync();
+
+        var data = JsonConvert.DeserializeObject<IEnumerable<StockPrice>>(content);
+
+        Stocks.ItemsSource = data;
+    }
+
+    AfterLoadingStockData();
+}
+
+# m2-4
+
+```
+ private async void Search_Click(object sender, RoutedEventArgs e)
+{
+    BeforeLoadingStockData();
+
+    try
+    {
+        var store = new DataStore();
+
+        var responseTask = store.GetStockPrices(StockIdentifier.Text);
+
+        Stocks.ItemsSource = await responseTask;
+    }
+    catch (Exception ex)
+    {
+        Notes.Text = ex.Message;
+    }
+
+    AfterLoadingStockData();
+}
+```
+
+
+# m2-6
+
+```
+private async void Search_Click(object sender, RoutedEventArgs e)
+{
+    BeforeLoadingStockData();
+
+    var getStocksTask = GetStocks();
+
+    await getStocksTask;
+
+    AfterLoadingStockData();
+}
+
+private async Task GetStocks()
+{
+    try
+    {
+        var store = new DataStore();
+
+        var responseTask = store.GetStockPrices(StockIdentifier.Text);
+
+        Stocks.ItemsSource = await responseTask;
+    }
+    catch (Exception ex)
+    {
+        Notes.Text = ex.Message;
+    }
+}
+```
+
+# m2-7
+```
+private async void Search_Click(object sender, RoutedEventArgs e)
+{
+    try
+    {
+        BeforeLoadingStockData();
+
+        await GetStocks();
+    }
+    catch (Exception ex)
+    {
+        Notes.Text = ex.Message;
+    }
+    finally
+    {
+        AfterLoadingStockData();
+    }
+}
+
+private async Task GetStocks()
+{
+    try
+    {
+        var store = new DataStore();
+
+        var responseTask = store.GetStockPrices(StockIdentifier.Text);
+
+        Stocks.ItemsSource = await responseTask;
+    }
+    catch (Exception ex)
+    {
+        throw ex;
+    }
+}
+```
