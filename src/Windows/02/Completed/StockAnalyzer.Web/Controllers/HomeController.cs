@@ -24,7 +24,6 @@ public class HomeController : Controller
 
             return View(data);
         }
-        
     }
 
     public IActionResult Privacy()
