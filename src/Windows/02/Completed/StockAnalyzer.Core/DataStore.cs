@@ -21,39 +21,37 @@ public class DataStore
     {
         var prices = new List<StockPrice>();
 
-        using (var stream =
-            new StreamReader(File.OpenRead(Path.Combine(basePath, @"StockPrices_Small.csv"))))
+        using var stream =
+            new StreamReader(File.OpenRead(Path.Combine(basePath, @"StockPrices_Small.csv")));
+        
+        await stream.ReadLineAsync(); // Skip the header how in the CSV
+
+        while (await stream.ReadLineAsync() is string line)
         {
-            await stream.ReadLineAsync(); // Skip the header how in the CSV
+            #region Find & Parse Stock Price from CSV
+            var segments = line.Split(',');
 
-            string line;
-            while ((line = await stream.ReadLineAsync()) != null)
-            {
-                #region Find & Parse Stock Price from CSV
-                var segments = line.Split(',');
-
-                for (var i = 0; i < segments.Length; i++) segments[i] = segments[i].Trim('\'', '"');
+            for (var i = 0; i < segments.Length; i++) segments[i] = segments[i].Trim('\'', '"');
                
-                if(segments[0].ToUpperInvariant() 
-                    != stockIdentifier.ToUpperInvariant())
-                {
-                    continue;
-                }
-                #endregion
-
-                var price = new StockPrice
-                {
-                    Identifier = segments[0],
-                    TradeDate = DateTime.ParseExact(segments[1], "M/d/yyyy h:mm:ss tt", CultureInfo.InvariantCulture),
-                    Volume = Convert.ToInt32(segments[6], CultureInfo.InvariantCulture),
-                    Change = Convert.ToDecimal(segments[7], CultureInfo.InvariantCulture),
-                    ChangePercent = Convert.ToDecimal(segments[8], CultureInfo.InvariantCulture),
-                };
-
-                prices.Add(price);
+            if(segments[0].ToUpperInvariant() 
+                != stockIdentifier.ToUpperInvariant())
+            {
+                continue;
             }
-        }
+            #endregion
 
+            var price = new StockPrice
+            {
+                Identifier = segments[0],
+                TradeDate = DateTime.ParseExact(segments[1], "M/d/yyyy h:mm:ss tt", CultureInfo.InvariantCulture),
+                Volume = Convert.ToInt32(segments[6], CultureInfo.InvariantCulture),
+                Change = Convert.ToDecimal(segments[7], CultureInfo.InvariantCulture),
+                ChangePercent = Convert.ToDecimal(segments[8], CultureInfo.InvariantCulture),
+            };
+
+            prices.Add(price);
+        }
+        
         if(!prices.Any())
         {
             throw new KeyNotFoundException($"Could not find any stocks for {stockIdentifier}");

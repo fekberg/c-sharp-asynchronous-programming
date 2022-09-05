@@ -8,7 +8,21 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="StockPrices_Small.csv" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="StockPrices_Small.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
 	<PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\StockAnalyzer.Core\StockAnalyzer.Core.csproj" />
   </ItemGroup>
 
 </Project>
