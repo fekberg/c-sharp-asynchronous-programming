@@ -70,6 +70,9 @@ public partial class MainWindow : Window
 
 
 
+
+
+
     private void BeforeLoadingStockData()
     {
         stopwatch.Restart();
