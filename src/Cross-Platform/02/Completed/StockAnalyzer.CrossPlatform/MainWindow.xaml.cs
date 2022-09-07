@@ -50,7 +50,7 @@ public partial class MainWindow : Window
     private static string API_URL = "https://ps-async.fekberg.com/api/stocks";
     private Stopwatch stopwatch = new Stopwatch();
 
-    private void Search_Click(object sender, RoutedEventArgs e)
+    private async void Search_Click(object sender, RoutedEventArgs e)
     {
         try
         {
@@ -76,7 +76,7 @@ public partial class MainWindow : Window
 
             var responseTask = store.GetStockPrices(StockIdentifier.Text);
 
-            Stocks.ItemsSource = await responseTask;
+            Stocks.Items = await responseTask;
         }
         catch (Exception ex)
         {

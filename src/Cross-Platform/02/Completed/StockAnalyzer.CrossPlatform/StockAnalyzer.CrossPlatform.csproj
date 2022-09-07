@@ -11,6 +11,14 @@
     </AvaloniaResource>
   </ItemGroup>
   <ItemGroup>
+    <None Remove="StockPrices_Small.csv" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="StockPrices_Small.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="Avalonia" Version="0.10.18" />
     <PackageReference Include="Avalonia.Controls.DataGrid" Version="0.10.18" />
     <PackageReference Include="Avalonia.Desktop" Version="0.10.18" />
