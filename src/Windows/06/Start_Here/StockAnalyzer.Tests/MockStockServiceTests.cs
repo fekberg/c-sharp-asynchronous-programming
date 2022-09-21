@@ -1,8 +1,4 @@
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using StockAnalyzer.Core.Services;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace StockAnalyzer.Tests
 {
@@ -16,7 +12,7 @@ namespace StockAnalyzer.Tests
             var stocks = await service.GetStockPricesFor("MSFT",
                 CancellationToken.None);
 
-            Assert.AreEqual(stocks.Count(), 2);
+            Assert.AreEqual(2, stocks.Count());
         }
     }
 }

@@ -4,22 +4,18 @@ namespace StockAnalyzer.Windows;
 
 public class StateMachineDemo
 {
-    public async Task<string> Run() 
+    public Task<string> Run() 
     {
-        var result = await Compute();
-
-        return result;
+        return Compute();
     }
 
-    public async Task<string> Compute()
+    public Task<string> Compute()
     {
-        var result = await Load();
-
-        return result;
+        return Load();
     }
 
-    public async Task<string> Load()
+    public Task<string> Load()
     {
-        return await Task.Run(() => "Pluralsight");
+        return Task.Run(() => "Pluralsight");
     }
 }

@@ -1,22 +1,21 @@
 ﻿using System.Threading.Tasks;
 
-namespace StockAnalyzer.Windows
+namespace StockAnalyzer.Windows;
+
+public class StateMachineDemo
 {
-    public class StateMachineDemo
+    public Task<string> Run() 
     {
-        public Task<string> Run()
-        {
-            return Compute();
-        }
+        return Compute();
+    }
 
-        public Task<string> Compute()
-        {
-            return Load();
-        }
+    public Task<string> Compute()
+    {
+        return Load();
+    }
 
-        public Task<string> Load()  
-        {
-            return Task.Run(() => "Pluralsight");
-        }
+    public Task<string> Load()
+    {
+        return Task.Run(() => "Pluralsight");
     }
 }

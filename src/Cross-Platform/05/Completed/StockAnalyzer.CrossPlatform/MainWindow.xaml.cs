@@ -17,198 +17,162 @@ using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Collections.Concurrent;
-using StockAnalyzer.CrossPlatform.Services;
-using System.Collections.ObjectModel;
 
+namespace StockAnalyzer.CrossPlatform;
 
-namespace StockAnalyzer.CrossPlatform
+public partial class MainWindow : Window
 {
-    public class MainWindow : Window
+    public DataGrid Stocks => this.FindControl<DataGrid>(nameof(Stocks));
+    public ProgressBar StockProgress => this.FindControl<ProgressBar>(nameof(StockProgress));
+    public TextBox StockIdentifier => this.FindControl<TextBox>(nameof(StockIdentifier));
+    public Button Search => this.FindControl<Button>(nameof(Search));
+    public TextBox Notes => this.FindControl<TextBox>(nameof(Notes));
+    public TextBlock StocksStatus => this.FindControl<TextBlock>(nameof(StocksStatus));
+    public TextBlock DataProvidedBy => this.FindControl<TextBlock>(nameof(DataProvidedBy));
+    public TextBlock IEX => this.FindControl<TextBlock>(nameof(IEX));
+    public TextBlock IEX_Terms => this.FindControl<TextBlock>(nameof(IEX_Terms));
+
+    public MainWindow()
     {
-        private static string API_URL = "https://ps-async.fekberg.com/api/stocks";
-        private Stopwatch stopwatch = new Stopwatch();
+        InitializeComponent();
+    }
 
-        CancellationTokenSource cancellationTokenSource;
+    private void InitializeComponent()
+    {
+        AvaloniaXamlLoader.Load(this);
 
-        private async void Search_Click(object sender, RoutedEventArgs e)
+        IEX.PointerPressed += (e, a) => Open("https://iextrading.com/developer/");
+        IEX_Terms.PointerPressed += (e, a) => Open("https://iextrading.com/api-exhibit-a/");
+
+        /// Data provided for free by <a href="https://iextrading.com/developer/" RequestNavigate="Hyperlink_OnRequestNavigate">IEX</Hyperlink>. View <Hyperlink NavigateUri="https://iextrading.com/api-exhibit-a/" RequestNavigate="Hyperlink_OnRequestNavigate">IEX’s Terms of Use.</Hyperlink>
+    }
+
+
+
+
+    private static string API_URL = "https://ps-async.fekberg.com/api/stocks";
+    private Stopwatch stopwatch = new Stopwatch();
+
+    CancellationTokenSource? cancellationTokenSource;
+
+    private async void Search_Click(object sender, RoutedEventArgs e)
+    {
+        try
         {
-            try
+            // NEVER DO THIS!
+            Task.Run(SearchForStocks).Wait();
+        }
+        catch (Exception ex)
+        {
+            Notes.Text = ex.Message;
+        }
+    }
+
+    private async Task SearchForStocks()
+    {
+        var service = new StockService();
+        var loadingTasks = new List<Task<IEnumerable<StockPrice>>>();
+
+        foreach (var identifier in StockIdentifier.Text.Split(' ', ','))
+        {
+            var loadTask = service.GetStockPricesFor(identifier,
+                CancellationToken.None);
+
+            loadingTasks.Add(loadTask);
+        }
+
+        var data = await Task.WhenAll(loadingTasks);
+
+        Stocks.Items = data.SelectMany(stock => stock);
+    }
+
+
+    private async Task<IEnumerable<StockPrice>>
+        GetStocksFor(string identifier)
+    {
+        var service = new StockService();
+        var data = await service.GetStockPricesFor(identifier,
+            CancellationToken.None).ConfigureAwait(false);
+
+        return data.Take(5);
+    }
+
+    private static Task<List<string>> SearchForStocks(
+        CancellationToken cancellationToken
+    )
+    {
+        return Task.Run(async () =>
+        {
+            using var stream = new StreamReader(File.OpenRead("StockPrices_Small.csv"));
+
+            var lines = new List<string>();
+
+            while (await stream.ReadLineAsync() is string line)
             {
-                BeforeLoadingStockData();
-
-                var identifiers = StockIdentifier.Text.Split(' ', ',');
-
-                var data = new ObservableCollection<StockPrice>();
-                Stocks.Items = data;
-
-                var service = new StockDiskStreamService();
-
-                var enumerator = service.GetAllStockPrices();
-
-                await foreach (var price in enumerator
-                    // You can implement cancellation on your own!
-                    .WithCancellation(CancellationToken.None))
+                if (cancellationToken.IsCancellationRequested)
                 {
-                    if (identifiers.Contains(price.Identifier))
-                    {
-                        data.Add(price);
-                    }
+                    break;
                 }
+                lines.Add(line);
             }
-            catch (Exception ex)
-            {
-                Notes.Text = ex.Message;
-            }
-            finally
-            {
-                AfterLoadingStockData();
-            }
-        }
 
+            return lines;
+        }, cancellationToken);
+    }
 
-        private async Task<IEnumerable<StockPrice>>
-            GetStocksFor(string identifier)
+    private async Task GetStocks()
+    {
+        try
         {
-            var service = new StockService();
-            var data = await service.GetStockPricesFor(identifier,
-                CancellationToken.None).ConfigureAwait(false);
+            var store = new DataStore();
 
-            return data.Take(5);
+            var responseTask = store.GetStockPrices(StockIdentifier.Text);
+
+            Stocks.Items = await responseTask;
         }
-
-        private static Task<List<string>>
-            SearchForStocks(CancellationToken cancellationToken)
+        catch (Exception ex)
         {
-            return Task.Run(async () =>
-            {
-                using (var stream = new StreamReader(File.OpenRead("StockPrices_Small.csv")))
-                {
-                    var lines = new List<string>();
-
-                    string line;
-                    while ((line = await stream.ReadLineAsync()) != null)
-                    {
-                        if (cancellationToken.IsCancellationRequested)
-                        {
-                            break;
-                        }
-
-                        lines.Add(line);
-                    }
-
-                    return lines;
-                }
-            }, cancellationToken);
+            throw;
         }
+    }
 
-        private async Task GetStocks()
+
+
+    private void BeforeLoadingStockData()
+    {
+        stopwatch.Restart();
+        StockProgress.IsVisible = true;
+        StockProgress.IsIndeterminate = true;
+    }
+
+    private void AfterLoadingStockData()
+    {
+        StocksStatus.Text = $"Loaded stocks for {StockIdentifier.Text} in {stopwatch.ElapsedMilliseconds}ms";
+        StockProgress.IsVisible = false;
+    }
+
+    private void Close_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (Application.Current.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktopLifetime)
         {
-            try
-            {
-                var store = new DataStore();
-
-                var responseTask = store.GetStockPrices(StockIdentifier.Text);
-
-                Stocks.Items = await responseTask;
-            }
-            catch (Exception ex)
-            {
-                throw ex;
-            }
+            desktopLifetime.Shutdown();
         }
+    }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        private void BeforeLoadingStockData()
+    public static void Open(string url)
+    {
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
-            stopwatch.Restart();
-            StockProgress.IsVisible = true;
-            StockProgress.IsIndeterminate = true;
+            url = url.Replace("&", "^&");
+            Process.Start(new ProcessStartInfo("cmd", $"/c start {url}") { CreateNoWindow = true });
         }
-
-        private void AfterLoadingStockData()
+        else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
         {
-            StocksStatus.Text = $"Loaded stocks for {StockIdentifier.Text} in {stopwatch.ElapsedMilliseconds}ms";
-            StockProgress.IsVisible = false;
+            Process.Start("xdg-open", url);
         }
-
-        private void Close_OnClick(object sender, RoutedEventArgs e)
+        else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
         {
-            if (Application.Current.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktopLifetime)
-            {
-                desktopLifetime.Shutdown();
-            }
+            Process.Start("open", url);
         }
-
-        public static void Open(string url)
-        {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                url = url.Replace("&", "^&");
-                Process.Start(new ProcessStartInfo("cmd", $"/c start {url}") { CreateNoWindow = true });
-            }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-            {
-                Process.Start("xdg-open", url);
-            }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-            {
-                Process.Start("open", url);
-            }
-        }
-
-
-
-        public DataGrid Stocks => this.FindControl<DataGrid>(nameof(Stocks));
-        public ProgressBar StockProgress => this.FindControl<ProgressBar>(nameof(StockProgress));
-        public TextBox StockIdentifier => this.FindControl<TextBox>(nameof(StockIdentifier));
-        public Button Search => this.FindControl<Button>(nameof(Search));
-        public TextBox Notes => this.FindControl<TextBox>(nameof(Notes));
-        public TextBlock StocksStatus => this.FindControl<TextBlock>(nameof(StocksStatus));
-        public TextBlock DataProvidedBy => this.FindControl<TextBlock>(nameof(DataProvidedBy));
-        public TextBlock IEX => this.FindControl<TextBlock>(nameof(IEX));
-        public TextBlock IEX_Terms => this.FindControl<TextBlock>(nameof(IEX_Terms));
-
-        public MainWindow()
-        {
-            InitializeComponent();
-#if DEBUG
-            this.AttachDevTools();
-#endif
-        }
-
-        private void InitializeComponent()
-        {
-            AvaloniaXamlLoader.Load(this);
-
-            IEX.PointerPressed += (e, a) => Open("https://iextrading.com/developer/");
-            IEX_Terms.PointerPressed += (e, a) => Open("https://iextrading.com/api-exhibit-a/");
-
-            /// Data provided for free by <a href="https://iextrading.com/developer/" RequestNavigate="Hyperlink_OnRequestNavigate">IEX</Hyperlink>. View <Hyperlink NavigateUri="https://iextrading.com/api-exhibit-a/" RequestNavigate="Hyperlink_OnRequestNavigate">IEX’s Terms of Use.</Hyperlink>
-        }
-
-
-
     }
 }
