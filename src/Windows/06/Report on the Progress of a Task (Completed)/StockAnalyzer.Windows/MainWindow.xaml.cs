@@ -52,10 +52,15 @@ public partial class MainWindow : Window
         {
             Notes.Text = ex.Message;
         }
+        finally
+        {
+            AfterLoadingStockData();
+        }
     }
 
 
-    private async Task SearchForStocks()
+    private async Task SearchForStocks(
+        IProgress<IEnumerable<StockPrice>> progress)
     {
         var service = new StockService();
         var loadingTasks = new List<Task<IEnumerable<StockPrice>>>();
@@ -78,6 +83,20 @@ public partial class MainWindow : Window
 
         Stocks.ItemsSource = data.SelectMany(stock => stock);
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
