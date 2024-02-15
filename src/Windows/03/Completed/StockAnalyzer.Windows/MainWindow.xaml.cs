@@ -12,7 +12,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Navigation;
+using System.Windows.Navigation; 
 
 namespace StockAnalyzer.Windows;
 
