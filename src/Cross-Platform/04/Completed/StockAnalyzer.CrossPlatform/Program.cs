@@ -18,6 +18,6 @@ namespace StockAnalyzer.CrossPlatform
             => AppBuilder.Configure<App>()
                 .UsePlatformDetect()
                 .UseReactiveUI()
-                .LogToDebug();
+                .LogToTrace();
     }
 }

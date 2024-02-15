@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using StockAnalyzer.Web.Models;
 using System.Diagnostics;
+using Newtonsoft.Json;
+using StockAnalyzer.Core.Domain;
 
 namespace StockAnalyzer.Web.Controllers;
 

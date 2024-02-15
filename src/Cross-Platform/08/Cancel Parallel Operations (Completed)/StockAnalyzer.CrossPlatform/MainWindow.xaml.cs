@@ -23,31 +23,16 @@ namespace StockAnalyzer.CrossPlatform;
 
 public partial class MainWindow : Window
 {
-    public DataGrid Stocks => this.FindControl<DataGrid>(nameof(Stocks));
-    public ProgressBar StockProgress => this.FindControl<ProgressBar>(nameof(StockProgress));
-    public TextBox StockIdentifier => this.FindControl<TextBox>(nameof(StockIdentifier));
-    public Button Search => this.FindControl<Button>(nameof(Search));
-    public TextBox Notes => this.FindControl<TextBox>(nameof(Notes));
-    public TextBlock StocksStatus => this.FindControl<TextBlock>(nameof(StocksStatus));
-    public TextBlock DataProvidedBy => this.FindControl<TextBlock>(nameof(DataProvidedBy));
-    public TextBlock IEX => this.FindControl<TextBlock>(nameof(IEX));
-    public TextBlock IEX_Terms => this.FindControl<TextBlock>(nameof(IEX_Terms));
-
     public MainWindow()
     {
         InitializeComponent();
-    }
 
-    private void InitializeComponent()
-    {
-        AvaloniaXamlLoader.Load(this);
 
         IEX.PointerPressed += (e, a) => Open("https://iextrading.com/developer/");
         IEX_Terms.PointerPressed += (e, a) => Open("https://iextrading.com/api-exhibit-a/");
 
         /// Data provided for free by <a href="https://iextrading.com/developer/" RequestNavigate="Hyperlink_OnRequestNavigate">IEX</Hyperlink>. View <Hyperlink NavigateUri="https://iextrading.com/api-exhibit-a/" RequestNavigate="Hyperlink_OnRequestNavigate">IEX’s Terms of Use.</Hyperlink>
     }
-
 
     private Random random = new Random();
     private static string API_URL = "https://ps-async.fekberg.com/api/stocks";
@@ -108,7 +93,7 @@ public partial class MainWindow : Window
         {
             Notes.Text = ex.Message;
         }
-        Stocks.Items = bag;
+        Stocks.ItemsSource = bag;
 
         AfterLoadingStockData();
     }
@@ -175,7 +160,7 @@ public partial class MainWindow : Window
 
         var data = await Task.WhenAll(loadingTasks);
 
-        Stocks.Items = data.SelectMany(stock => stock);
+        Stocks.ItemsSource = data.SelectMany(stock => stock);
     }
 
 
@@ -220,7 +205,7 @@ public partial class MainWindow : Window
 
             var responseTask = store.GetStockPrices(StockIdentifier.Text);
 
-            Stocks.Items = await responseTask;
+            Stocks.ItemsSource = await responseTask;
         }
         catch (Exception ex)
         {

@@ -1,6 +1,5 @@
 ﻿using System;
 using Avalonia;
-using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.ReactiveUI;
 
 namespace StockAnalyzer.CrossPlatform
@@ -17,7 +16,7 @@ namespace StockAnalyzer.CrossPlatform
         public static AppBuilder BuildAvaloniaApp()
             => AppBuilder.Configure<App>()
                 .UsePlatformDetect()
-                .UseReactiveUI()
-                .LogToDebug();
+                .WithInterFont()
+                .LogToTrace();
     }
 }

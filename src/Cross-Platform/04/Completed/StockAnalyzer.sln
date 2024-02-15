@@ -9,7 +9,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StockAnalyzer.CrossPlatform
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StockAnalyzer.Web", "StockAnalyzer.Web\StockAnalyzer.Web.csproj", "{D7F04E23-A911-45E4-8848-C0AE55307635}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StockAnalyzer.Tests", "StockAnalyzer.Tests\StockAnalyzer.Tests.csproj", "{B5029A56-9AB0-4028-9CE8-5280AE7F6D8A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StockAnalyzer.Tests", "StockAnalyzer.Tests\StockAnalyzer.Tests.csproj", "{B5029A56-9AB0-4028-9CE8-5280AE7F6D8A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
