@@ -11,7 +11,7 @@
     <DockPanel>
         <Menu Height="30" DockPanel.Dock="Top">
             <MenuItem Header="_File" FontSize="20">
-                <MenuItem x:Name="Close" FontSize="20" Header="_Close" Click="Close_OnClick"/>
+                <MenuItem x:Name="CloseMenuItem" FontSize="20" Header="_Close" Click="Close_OnClick"/>
             </MenuItem>
         </Menu>
         <StatusBar DockPanel.Dock="Bottom">

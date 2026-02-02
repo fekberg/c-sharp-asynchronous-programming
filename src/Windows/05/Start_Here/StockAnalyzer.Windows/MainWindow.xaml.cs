@@ -1,5 +1,4 @@
-﻿using Newtonsoft.Json;
-using StockAnalyzer.Core;
+﻿using StockAnalyzer.Core;
 using StockAnalyzer.Core.Domain;
 using StockAnalyzer.Core.Services;
 using System;
@@ -14,6 +13,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Navigation;
+using System.Text.Json;
 
 namespace StockAnalyzer.Windows;
 

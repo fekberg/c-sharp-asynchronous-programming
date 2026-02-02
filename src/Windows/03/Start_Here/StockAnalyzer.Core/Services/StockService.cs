@@ -1,10 +1,10 @@
-﻿using Newtonsoft.Json;
-using StockAnalyzer.Core.Domain;
+﻿using StockAnalyzer.Core.Domain;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Text.Json;
 
 namespace StockAnalyzer.Core.Services;
 
@@ -38,7 +38,7 @@ public class StockService : IStockService
 
             var content = await result.Content.ReadAsStringAsync();
 
-            return JsonConvert.DeserializeObject<IEnumerable<StockPrice>>(content);
+            return JsonSerializer.Deserialize<IEnumerable<StockPrice>>(content);
         }
     }
 }

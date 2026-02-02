@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <TargetFramework>net10.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
     <UseWPF>true</UseWPF>
   </PropertyGroup>
@@ -11,11 +11,7 @@
     <None Remove="StockPrices_Small.csv" />
   </ItemGroup>
 
-  <ItemGroup>
-	<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-  </ItemGroup>
-
-  <ItemGroup>
+	<ItemGroup>
     <ProjectReference Include="..\StockAnalyzer.Core\StockAnalyzer.Core.csproj" />
   </ItemGroup>
 
