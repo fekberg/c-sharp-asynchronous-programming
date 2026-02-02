@@ -1,11 +1,11 @@
-﻿using Newtonsoft.Json;
-using StockAnalyzer.Core.Domain;
+﻿using StockAnalyzer.Core.Domain;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net;
 using System.Threading;
 using System.Windows;
 using System.Windows.Navigation;
+using System.Text.Json;
 
 namespace StockAnalyzer.Windows;
 
@@ -32,7 +32,7 @@ public partial class MainWindow : Window
         // Simulate that the web call takes a very long time
         Thread.Sleep(10000);
 
-        var data = JsonConvert.DeserializeObject<IEnumerable<StockPrice>>(content);
+        var data = JsonSerializer.Deserialize<IEnumerable<StockPrice>>(content);
 
         Stocks.ItemsSource = data;
 
