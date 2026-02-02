@@ -3,7 +3,8 @@ using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
-using Newtonsoft.Json;
+using System.Text.Json;
+using StockAnalyzer.Core;
 using StockAnalyzer.Core.Domain;
 using System;
 using System.Collections.Generic;
@@ -26,31 +27,47 @@ public partial class MainWindow : Window
         IEX_Terms.PointerPressed += (e, a) => Open("https://iextrading.com/api-exhibit-a/");
 
         /// Data provided for free by <a href="https://iextrading.com/developer/" RequestNavigate="Hyperlink_OnRequestNavigate">IEX</Hyperlink>. View <Hyperlink NavigateUri="https://iextrading.com/api-exhibit-a/" RequestNavigate="Hyperlink_OnRequestNavigate">IEX’s Terms of Use.</Hyperlink>
+
     }
+
+
 
     private static string API_URL = "https://ps-async.fekberg.com/api/stocks";
     private Stopwatch stopwatch = new Stopwatch();
 
-    private void Search_Click(object sender, RoutedEventArgs e)
+    private async void Search_Click(object sender, RoutedEventArgs e)
     {
-        BeforeLoadingStockData();
+        try
+        {
+            BeforeLoadingStockData();
 
-        var client = new WebClient();
-
-        var content = client.DownloadString($"{API_URL}/{StockIdentifier.Text}");
-
-        // Simulate that the web call takes a very long time
-        Thread.Sleep(10000);
-
-        var data = JsonConvert.DeserializeObject<IEnumerable<StockPrice>>(content);
-
-        // This is the same as ItemsSource in WPF used in the course videos
-        Stocks.ItemsSource = data;
-
-        AfterLoadingStockData();
+            await GetStocks();
+        }
+        catch (Exception ex)
+        {
+            Notes.Text = ex.Message;
+        }
+        finally
+        {
+            AfterLoadingStockData();
+        }
     }
 
+    private async Task GetStocks()
+    {
+        try
+        {
+            var store = new DataStore();
 
+            var responseTask = store.GetStockPrices(StockIdentifier.Text);
+
+            Stocks.ItemsSource = await responseTask;
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
 
 
 

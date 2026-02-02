@@ -2,6 +2,7 @@
 using StockAnalyzer.Core.Domain;
 using StockAnalyzer.Core.Services;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -31,53 +32,33 @@ public partial class MainWindow : Window
 
     private async void Search_Click(object sender, RoutedEventArgs e)
     {
-        if (cancellationTokenSource is not null)
-        {
-            // Already have an instance of the cancellation token source?
-            // This means the button has already been pressed!
-
-            cancellationTokenSource.Cancel();
-            cancellationTokenSource.Dispose();
-            cancellationTokenSource = null;
-
-            Search.Content = "Search";
-            return;
-        }
-
         try
         {
-            cancellationTokenSource = new();
+            var data = await GetStocksFor(StockIdentifier.Text);
 
-            cancellationTokenSource.Token.Register(() => {
-                Notes.Text = "Cancellation requested";
-            });
-
-            Search.Content = "Cancel"; // Button text
-
-            BeforeLoadingStockData();
-
-            var service = new StockService();
-
-            var data = await service.GetStockPricesFor(
-                StockIdentifier.Text,
-                cancellationTokenSource.Token
-            );
+            Notes.Text = "Stocks loaded!";
 
             Stocks.ItemsSource = data;
         }
-        catch (Exception ex)
+        catch(Exception ex)
         {
             Notes.Text = ex.Message;
         }
-        finally
-        {
-            AfterLoadingStockData();
-            cancellationTokenSource?.Dispose();
-            cancellationTokenSource = null;
-
-            Search.Content = "Search";
-        }
     }
+
+    private async Task<IEnumerable<StockPrice>>
+        GetStocksFor(string identifier)
+    {
+        var service = new StockService();
+        var data = await service.GetStockPricesFor(identifier,
+            CancellationToken.None).ConfigureAwait(false);
+
+        
+
+        return data.Take(5);
+    }
+
+
 
 
 

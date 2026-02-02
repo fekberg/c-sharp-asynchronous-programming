@@ -23,7 +23,7 @@ public class DataStore
 
         using var stream =
             new StreamReader(File.OpenRead(Path.Combine(basePath, @"StockPrices_Small.csv")));
-
+        
         await stream.ReadLineAsync(); // Skip the header how in the CSV
 
         while (await stream.ReadLineAsync() is string line)
@@ -32,8 +32,8 @@ public class DataStore
             var segments = line.Split(',');
 
             for (var i = 0; i < segments.Length; i++) segments[i] = segments[i].Trim('\'', '"');
-
-            if (segments[0].ToUpperInvariant()
+               
+            if(segments[0].ToUpperInvariant() 
                 != stockIdentifier.ToUpperInvariant())
             {
                 continue;
@@ -51,8 +51,8 @@ public class DataStore
 
             prices.Add(price);
         }
-
-        if (!prices.Any())
+        
+        if(!prices.Any())
         {
             throw new KeyNotFoundException($"Could not find any stocks for {stockIdentifier}");
         }

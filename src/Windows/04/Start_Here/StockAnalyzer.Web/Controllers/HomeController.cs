@@ -20,7 +20,7 @@ public class HomeController : Controller
 
             var content = await response.Content.ReadAsStringAsync();
 
-            var data = JsonSerializer.Deserialize<IEnumerable<StockPrice>>(content);
+            var data = JsonSerializer.Deserialize<IEnumerable<StockPrice>>(content, JsonSerializerOptions.Web);
 
             return View(data);
         }

@@ -3,7 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
-using Newtonsoft.Json;
+using System.Text.Json;
 using StockAnalyzer.Core;
 using StockAnalyzer.Core.Domain;
 using StockAnalyzer.Core.Services;
@@ -25,12 +25,12 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+
         IEX.PointerPressed += (e, a) => Open("https://iextrading.com/developer/");
         IEX_Terms.PointerPressed += (e, a) => Open("https://iextrading.com/api-exhibit-a/");
 
         /// Data provided for free by <a href="https://iextrading.com/developer/" RequestNavigate="Hyperlink_OnRequestNavigate">IEX</Hyperlink>. View <Hyperlink NavigateUri="https://iextrading.com/api-exhibit-a/" RequestNavigate="Hyperlink_OnRequestNavigate">IEX’s Terms of Use.</Hyperlink>
     }
-
 
 
     private static string API_URL = "https://ps-async.fekberg.com/api/stocks";
@@ -42,17 +42,33 @@ public partial class MainWindow : Window
     {
         try
         {
-            var data = await GetStocksFor(StockIdentifier.Text);
-
-            Notes.Text = "Stocks loaded!";
-
-            Stocks.ItemsSource = data;
+            // NEVER DO THIS!
+            Task.Run(SearchForStocks).Wait();
         }
         catch (Exception ex)
         {
             Notes.Text = ex.Message;
         }
     }
+
+    private async Task SearchForStocks()
+    {
+        var service = new StockService();
+        var loadingTasks = new List<Task<IEnumerable<StockPrice>>>();
+
+        foreach (var identifier in StockIdentifier.Text.Split(' ', ','))
+        {
+            var loadTask = service.GetStockPricesFor(identifier,
+                CancellationToken.None);
+
+            loadingTasks.Add(loadTask);
+        }
+
+        var data = await Task.WhenAll(loadingTasks);
+
+        Stocks.ItemsSource = data.SelectMany(stock => stock);
+    }
+
 
     private async Task<IEnumerable<StockPrice>>
         GetStocksFor(string identifier)
@@ -61,33 +77,29 @@ public partial class MainWindow : Window
         var data = await service.GetStockPricesFor(identifier,
             CancellationToken.None).ConfigureAwait(false);
 
-
-
         return data.Take(5);
     }
 
-    private static Task<List<string>>
-            SearchForStocks(CancellationToken cancellationToken)
+    private static Task<List<string>> SearchForStocks(
+        CancellationToken cancellationToken
+    )
     {
         return Task.Run(async () =>
         {
-            using (var stream = new StreamReader(File.OpenRead("StockPrices_Small.csv")))
+            using var stream = new StreamReader(File.OpenRead("StockPrices_Small.csv"));
+
+            var lines = new List<string>();
+
+            while (await stream.ReadLineAsync() is string line)
             {
-                var lines = new List<string>();
-
-                string line;
-                while ((line = await stream.ReadLineAsync()) != null)
+                if (cancellationToken.IsCancellationRequested)
                 {
-                    if (cancellationToken.IsCancellationRequested)
-                    {
-                        break;
-                    }
-
-                    lines.Add(line);
+                    break;
                 }
-
-                return lines;
+                lines.Add(line);
             }
+
+            return lines;
         }, cancellationToken);
     }
 
@@ -106,9 +118,6 @@ public partial class MainWindow : Window
             throw;
         }
     }
-
-
-
 
 
 

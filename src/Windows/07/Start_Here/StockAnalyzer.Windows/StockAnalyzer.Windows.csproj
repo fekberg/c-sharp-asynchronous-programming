@@ -11,6 +11,8 @@
     <None Remove="StockPrices_Small.csv" />
   </ItemGroup>
 
+
+
   <ItemGroup>
     <ProjectReference Include="..\StockAnalyzer.Core\StockAnalyzer.Core.csproj" />
   </ItemGroup>

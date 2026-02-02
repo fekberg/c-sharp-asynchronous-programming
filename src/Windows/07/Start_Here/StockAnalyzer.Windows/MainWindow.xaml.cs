@@ -1,4 +1,5 @@
-﻿using StockAnalyzer.Core;
+﻿using System.Text.Json;
+using StockAnalyzer.Core;
 using StockAnalyzer.Core.Domain;
 using StockAnalyzer.Core.Services;
 using StockAnalyzer.Windows.Services;
@@ -29,6 +30,9 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
     }
+
+
+
     private async void Search_Click(object sender, RoutedEventArgs e)
     {
         BeforeLoadingStockData();
@@ -37,22 +41,64 @@ public partial class MainWindow : Window
             {
                 { "MSFT", Generate("MSFT") },
                 { "GOOGL", Generate("GOOGL") },
-                { "PS", Generate("PS") },
-                { "AMAZ", Generate("AMAZ") }
+                { "AAPL", Generate("AAPL") },
+                { "CAT", Generate("CAT") },
+                { "ABC", Generate("ABC") },
+                { "DEF", Generate("DEF") }
             };
+
+        var bag = new ConcurrentBag<StockCalculation>();
+
+        try
+        {
+            await Task.Run(() =>
+            {
+                try
+                {
+                    Parallel.For(0, 10, (i, state) => {
+                        // i == current index
+                    });
+
+                    var parallelLoopResult = Parallel.ForEach(stocks,
+                        new ParallelOptions { MaxDegreeOfParallelism = 1 },
+                        (element, state) => {
+                            if (element.Key == "MSFT" || state.ShouldExitCurrentIteration)
+                            {
+                                state.Break();
+
+                                return;
+                            }
+                            else
+                            {
+                                var result = Calculate(element.Value);
+                                bag.Add(result);
+                            }
+                        });
+                }
+                catch (Exception ex)
+                {
+                    throw;
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            Notes.Text = ex.Message;
+        }
+        Stocks.ItemsSource = bag;
 
         AfterLoadingStockData();
     }
 
-    private IEnumerable<StockPrice> Generate(string stockIdentifier)
-    {
-        return Enumerable.Range(1, random.Next(10, 250))
-            .Select(x => new StockPrice
-            {
-                Identifier = stockIdentifier,
-                Open = random.Next(10, 1024)
-            });
-    }
+
+
+
+
+
+
+
+
+
 
     private StockCalculation Calculate(IEnumerable<StockPrice> prices)
     {
@@ -79,6 +125,25 @@ public partial class MainWindow : Window
         return calculation;
         #endregion
     }
+
+    private IEnumerable<StockPrice> Generate(string stockIdentifier)
+    {
+        return Enumerable.Range(1, random.Next(10, 250))
+            .Select(x => new StockPrice
+            {
+                Identifier = stockIdentifier,
+                Open = random.Next(10, 1024)
+            });
+    }
+
+
+
+
+
+
+
+
+
 
 
     private void BeforeLoadingStockData()

@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using System.Text.Json;
 using StockAnalyzer.Core.Domain;
 using StockAnalyzer.Web.Models;
 using System.Diagnostics;
+using System.Text.Json;
 
 namespace StockAnalyzer.Web.Controllers;
 
@@ -20,7 +20,7 @@ public class HomeController : Controller
 
             var content = await response.Content.ReadAsStringAsync();
 
-            var data = JsonSerializer.Deserialize<IEnumerable<StockPrice>>(content);
+            var data = JsonSerializer.Deserialize<IEnumerable<StockPrice>>(content, JsonSerializerOptions.Web);
 
             return View(data);
         }

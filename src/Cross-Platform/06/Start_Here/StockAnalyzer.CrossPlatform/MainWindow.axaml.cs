@@ -3,7 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
-using Newtonsoft.Json;
+using System.Text.Json;
 using StockAnalyzer.Core;
 using StockAnalyzer.Core.Domain;
 using StockAnalyzer.Core.Services;
@@ -24,13 +24,14 @@ public partial class MainWindow : Window
 {
     public MainWindow()
     {
-        InitializeComponent();
-
+        InitializeComponent(); 
+        
         IEX.PointerPressed += (e, a) => Open("https://iextrading.com/developer/");
         IEX_Terms.PointerPressed += (e, a) => Open("https://iextrading.com/api-exhibit-a/");
 
         /// Data provided for free by <a href="https://iextrading.com/developer/" RequestNavigate="Hyperlink_OnRequestNavigate">IEX</Hyperlink>. View <Hyperlink NavigateUri="https://iextrading.com/api-exhibit-a/" RequestNavigate="Hyperlink_OnRequestNavigate">IEX’s Terms of Use.</Hyperlink>
     }
+
 
 
     private static string API_URL = "https://ps-async.fekberg.com/api/stocks";

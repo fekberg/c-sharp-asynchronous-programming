@@ -1,8 +1,8 @@
-﻿using System.Text.Json;
-using StockAnalyzer.Core.Domain;
+﻿using StockAnalyzer.Core.Domain;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -38,7 +38,7 @@ public class StockService : IStockService
 
             var content = await result.Content.ReadAsStringAsync();
 
-            return JsonSerializer.Deserialize<IEnumerable<StockPrice>>(content);
+            return JsonSerializer.Deserialize<IEnumerable<StockPrice>>(content, JsonSerializerOptions.Web);
         }
     }
 }

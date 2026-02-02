@@ -1,8 +1,11 @@
 ﻿using StockAnalyzer.Core;
 using StockAnalyzer.Core.Domain;
+using StockAnalyzer.Core.Services;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading;
@@ -24,14 +27,43 @@ public partial class MainWindow : Window
     }
 
 
+    CancellationTokenSource? cancellationTokenSource;
 
     private async void Search_Click(object sender, RoutedEventArgs e)
     {
+        if (cancellationTokenSource is not null)
+        {
+            // Already have an instance of the cancellation token source?
+            // This means the button has already been pressed!
+
+            cancellationTokenSource.Cancel();
+            cancellationTokenSource.Dispose();
+            cancellationTokenSource = null;
+
+            Search.Content = "Search";
+            return;
+        }
+
         try
         {
+            cancellationTokenSource = new();
+
+            cancellationTokenSource.Token.Register(() => {
+                Notes.Text = "Cancellation requested";
+            });
+
+            Search.Content = "Cancel"; // Button text
+
             BeforeLoadingStockData();
 
-            await GetStocks();
+            var service = new StockService();
+
+            var data = await service.GetStockPricesFor(
+                StockIdentifier.Text,
+                cancellationTokenSource.Token
+            );
+
+            Stocks.ItemsSource = data;
         }
         catch (Exception ex)
         {
@@ -40,7 +72,45 @@ public partial class MainWindow : Window
         finally
         {
             AfterLoadingStockData();
+            cancellationTokenSource?.Dispose();
+            cancellationTokenSource = null;
+
+            Search.Content = "Search";
         }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+    private static Task<List<string>> SearchForStocks(
+        CancellationToken cancellationToken    
+    )
+    {
+        return Task.Run(async () =>
+        {
+            using var stream = new StreamReader(File.OpenRead("StockPrices_Small.csv"));
+
+            var lines = new List<string>();
+
+            while (await stream.ReadLineAsync() is string line)
+            {
+                if(cancellationToken.IsCancellationRequested)
+                {
+                    break;
+                }
+                lines.Add(line);
+            }
+
+            return lines;
+        }, cancellationToken);
     }
 
     private async Task GetStocks()
@@ -58,6 +128,9 @@ public partial class MainWindow : Window
             throw;
         }
     }
+
+
+
 
 
 

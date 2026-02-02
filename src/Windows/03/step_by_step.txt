@@ -1,28 +1,196 @@
-# m3-2
+# m4-2
 
 ```
 private async void Search_Click(object sender, RoutedEventArgs e)
 {
+    if(cancellationTokenSource != null)
+    {
+        // Already have an instance of the cancellation token source?
+        // This means the button has already been pressed!
+
+        cancellationTokenSource.Cancel();
+        cancellationTokenSource = null;
+
+        Search.Content = "Search";
+        return;
+    }
+
     try
     {
+
+        cancellationTokenSource = new CancellationTokenSource();
+        cancellationTokenSource.Token.Register(() =>
+        {
+            Notes.Text = "Cancellation requested";
+        });
+        Search.Content = "Cancel"; // Button text
+
+
         BeforeLoadingStockData();
 
-        await Task.Run(() => { 
-            var lines = File.ReadAllLines("StockPrices_Small.csv");
+        var identifiers = StockIdentifier.Text
+                                            .Split(',', ' ');
 
-            var data = new List<StockPrice>();
+        var service = new StockService();
 
-            foreach (var line in lines.Skip(1))
-            {
-                var price = StockPrice.FromCSV(line);
+        var loadingTasks = new List<Task<IEnumerable<StockPrice>>>();
 
-                data.Add(price);
+        foreach (var identifier in identifiers)
+        {
+            var loadTask = service.GetStockPricesFor(identifier,
+                cancellationTokenSource.Token);
+
+            loadingTasks.Add(loadTask);
+                }
+
+                var timeoutTask = Task.Delay(120000);
+                var allStocksLoadingTask = Task.WhenAll(loadingTasks);
+
+                var completedTask = await Task.WhenAny(timeoutTask, 
+                    allStocksLoadingTask);
+
+                if(completedTask == timeoutTask)
+                {
+                    cancellationTokenSource.Cancel();
+                    throw new OperationCanceledException("Timeout!");
+                }
+
+                Stocks.ItemsSource = allStocksLoadingTask
+                    .Result
+                    .SelectMany(x => x);
+
+
             }
+            catch (Exception ex)
+            {
+                Notes.Text = ex.Message;
+            }
+            finally
+            {
+                AfterLoadingStockData();
 
-            Dispatcher.Invoke(() => { 
-                Stocks.ItemsSource = data.Where(sp => sp.Identifier == StockIdentifier.Text);
-            });
+                cancellationTokenSource = null;
+                Search.Content = "Search";
+            }
+        }
+```
+
+
+# m4-3
+
+```
+public class MockStockService : IStockService
+{
+    public Task<IEnumerable<StockPrice>> 
+        GetStockPricesFor(string stockIdentifier, 
+        CancellationToken cancellationToken)
+    {
+        var stocks = new List<StockPrice>
+        {
+            new StockPrice
+            {
+                Identifier = "MSFT",
+                Change = 0.5m,
+                ChangePercent = 0.75m
+            },
+            new StockPrice
+            {
+                Identifier = "MSFT",
+                Change = 0.5m,
+                ChangePercent = 0.75m
+            },
+            new StockPrice
+            {
+                Identifier = "GOOGL",
+                Change = 0.5m,
+                ChangePercent = 0.75m
+            },
+            new StockPrice
+            {
+                Identifier = "GOOGL",
+                Change = 0.5m,
+                ChangePercent = 0.75m
+            }
+        };
+
+        var task = Task.FromResult(stocks.Where(stock => stock.Identifier == stockIdentifier));
+        return task;
+    }
+}
+
+[TestClass]
+public class MockStockServiceTests
+{
+    [TestMethod]
+    public async Task Can_Load_All_MSFT_Stocks()
+    {
+        var service = new MockStockService();
+        var stocks = await service.GetStockPricesFor("MSFT",
+            CancellationToken.None);
+
+        Assert.AreEqual(stocks.Count(), 2);
+    }
+}
+
+private async void Search_Click(object sender, RoutedEventArgs e)
+{
+    if(cancellationTokenSource != null)
+    {
+        // Already have an instance of the cancellation token source?
+        // This means the button has already been pressed!
+
+        cancellationTokenSource.Cancel();
+        cancellationTokenSource = null;
+
+        Search.Content = "Search";
+        return;
+    }
+
+    try
+    {
+
+        cancellationTokenSource = new CancellationTokenSource();
+        cancellationTokenSource.Token.Register(() =>
+        {
+            Notes.Text = "Cancellation requested";
         });
+        Search.Content = "Cancel"; // Button text
+
+
+        BeforeLoadingStockData();
+
+        var identifiers = StockIdentifier.Text
+                                            .Split(',', ' ');
+
+        var service = new MockStockService();
+
+        var loadingTasks = new List<Task<IEnumerable<StockPrice>>>();
+
+        foreach (var identifier in identifiers)
+        {
+            var loadTask = service.GetStockPricesFor(identifier,
+                cancellationTokenSource.Token);
+
+            loadingTasks.Add(loadTask);
+        }
+
+        var timeoutTask = Task.Delay(120000);
+        var allStocksLoadingTask = Task.WhenAll(loadingTasks);
+
+        var completedTask = await Task.WhenAny(timeoutTask, 
+            allStocksLoadingTask);
+
+        if(completedTask == timeoutTask)
+        {
+            cancellationTokenSource.Cancel();
+            throw new OperationCanceledException("Timeout!");
+        }
+
+        Stocks.ItemsSource = allStocksLoadingTask
+            .Result
+            .SelectMany(x => x);
+
+
     }
     catch (Exception ex)
     {
@@ -31,316 +199,17 @@ private async void Search_Click(object sender, RoutedEventArgs e)
     finally
     {
         AfterLoadingStockData();
-    }
-}
-```
 
-# m3-3
-
-```
-private void Search_Click(object sender, RoutedEventArgs e)
-{
-    try
-    {
-        BeforeLoadingStockData();
-
-        var loadLinesTask = Task.Run(() => { 
-            var lines = File.ReadAllLines("StockPrices_Small.csv");
-
-            return lines;
-        });
-
-        var processStocksTask =
-            loadLinesTask.ContinueWith((completedTask) => {
-            var lines = completedTask.Result;
-
-            var data = new List<StockPrice>();
-
-            foreach (var line in lines.Skip(1))
-            {
-                var price = StockPrice.FromCSV(line);
-
-                data.Add(price);
-            }
-
-            Dispatcher.Invoke(() => {
-                Stocks.ItemsSource = data.Where(sp => sp.Identifier == StockIdentifier.Text);
-            });
-        });
-
-        processStocksTask.ContinueWith(_ => {
-            Dispatcher.Invoke(() => {
-                AfterLoadingStockData();
-            });
-        });
-    }
-    catch (Exception ex)
-    {
-        Notes.Text = ex.Message;
-    }
-    finally
-    {
-        
-    }
-}
-```
-
-
-# m3-4
-
-```
-private void Search_Click(object sender, RoutedEventArgs e)
-{
-    try
-    {
-        BeforeLoadingStockData();
-
-        var loadLinesTask = Task.Run(async () => { 
-            using(var stream = new StreamReader(File.OpenRead("StockPrices_Small.csv")))
-            {
-                var lines = new List<string>();
-
-                string line;
-                while((line = await stream.ReadLineAsync()) != null)
-                {
-                    lines.Add(line);
-                }
-
-                return lines;
-            }
-        });
-
-        var processStocksTask =
-            loadLinesTask.ContinueWith((completedTask) => {
-            var lines = completedTask.Result;
-
-            var data = new List<StockPrice>();
-
-            foreach (var line in lines.Skip(1))
-            {
-                var price = StockPrice.FromCSV(line);
-
-                data.Add(price);
-            }
-
-            Dispatcher.Invoke(() => {
-                Stocks.ItemsSource = data.Where(sp => sp.Identifier == StockIdentifier.Text);
-            });
-        });
-
-        processStocksTask.ContinueWith(_ => {
-            Dispatcher.Invoke(() => {
-                AfterLoadingStockData();
-            });
-        });
-    }
-    catch (Exception ex)
-    {
-        Notes.Text = ex.Message;
-    }
-    finally
-    {
-        
-    }
-}
-```
-
-# m3-5
-```
-private void Search_Click(object sender, RoutedEventArgs e)
-{
-    try
-    {
-        BeforeLoadingStockData();
-
-        var loadLinesTask = Task.Run(async () => { 
-            using(var stream = new StreamReader(File.OpenRead("StockPrices_Small.csv")))
-            {
-                var lines = new List<string>();
-
-                string line;
-                while((line = await stream.ReadLineAsync()) != null)
-                {
-                    lines.Add(line);
-                }
-
-                return lines;
-            }
-        });
-
-        loadLinesTask.ContinueWith(t =>
-        {
-
-            Dispatcher.Invoke(() =>
-            {
-                Notes.Text = t.Exception.InnerException.Message;
-            });
-
-        }, TaskContinuationOptions.OnlyOnFaulted);
-
-        var processStocksTask =
-            loadLinesTask
-            .ContinueWith((completedTask) =>
-            {
-                var lines = completedTask.Result;
-
-                var data = new List<StockPrice>();
-
-                foreach (var line in lines.Skip(1))
-                {
-                    var price = StockPrice.FromCSV(line);
-
-                    data.Add(price);
-                }
-
-                Dispatcher.Invoke(() =>
-                {
-                    Stocks.ItemsSource = data.Where(sp => sp.Identifier == StockIdentifier.Text);
-                });
-            },
-            TaskContinuationOptions.OnlyOnRanToCompletion
-        );
-
-        processStocksTask.ContinueWith(_ =>
-        {
-            Dispatcher.Invoke(() =>
-            {
-                AfterLoadingStockData();
-            });
-        });
-    }
-    catch (Exception ex)
-    {
-        Notes.Text = ex.Message;
-    }
-    finally
-    {
-        
-    }
-}
-```
-
-# m3-6
-```
-CancellationTokenSource cancellationTokenSource;
-
-private void Search_Click(object sender, RoutedEventArgs e)
-{
-    if(cancellationTokenSource != null)
-    {
-        // Already have an instance of the cancellation token source?
-        // This means the button has already been pressed!
-
-        cancellationTokenSource.Cancel();
         cancellationTokenSource = null;
-
         Search.Content = "Search";
-        return;
     }
-
-    try
-    {
-        cancellationTokenSource = new CancellationTokenSource();
-
-        cancellationTokenSource.Token.Register(() => {
-            Notes.Text = "Cancellation requested";
-        });
-
-
-        Search.Content = "Cancel"; // Button text
-
-        BeforeLoadingStockData();
-
-        var loadLinesTask = 
-            SearchForStocks(cancellationTokenSource.Token);
-
-        loadLinesTask.ContinueWith(t =>
-        {
-
-            Dispatcher.Invoke(() =>
-            {
-                Notes.Text = t.Exception.InnerException.Message;
-            });
-
-        },
-            TaskContinuationOptions.OnlyOnFaulted);
-
-        var processStocksTask =
-            loadLinesTask
-            .ContinueWith((completedTask) =>
-            {
-                var lines = completedTask.Result;
-
-                var data = new List<StockPrice>();
-
-                foreach (var line in lines.Skip(1))
-                {
-                    var price = StockPrice.FromCSV(line);
-
-                    data.Add(price);
-                }
-
-                Dispatcher.Invoke(() =>
-                {
-                    Stocks.ItemsSource = data.Where(sp => sp.Identifier == StockIdentifier.Text);
-                });
-            },
-            TaskContinuationOptions.OnlyOnRanToCompletion
-        );
-
-        processStocksTask.ContinueWith(_ =>
-        {
-            Dispatcher.Invoke(() =>
-            {
-                AfterLoadingStockData();
-
-                cancellationTokenSource = null;
-
-                Search.Content = "Search";
-            });
-        });
-    }
-    catch (Exception ex)
-    {
-        Notes.Text = ex.Message;
-    }
-    finally
-    {
-        
-    }
-}
-
-private static Task<List<string>> 
-    SearchForStocks(CancellationToken cancellationToken)
-{
-    return Task.Run(async () =>
-    {
-        using (var stream = new StreamReader(File.OpenRead("StockPrices_Small.csv")))
-        {
-            var lines = new List<string>();
-
-            string line;
-            while ((line = await stream.ReadLineAsync()) != null)
-            {
-                if(cancellationToken.IsCancellationRequested)
-                {
-                    break;
-                }
-
-                lines.Add(line);
-            }
-
-            return lines;
-        }
-    }, cancellationToken);
 }
 ```
 
-# m3-7
+
+# m4-4
 
 ```
-CancellationTokenSource cancellationTokenSource;
-
 private async void Search_Click(object sender, RoutedEventArgs e)
 {
     if(cancellationTokenSource != null)
@@ -357,18 +226,62 @@ private async void Search_Click(object sender, RoutedEventArgs e)
 
     try
     {
+
         cancellationTokenSource = new CancellationTokenSource();
-        cancellationTokenSource.Token.Register(() => {
+        cancellationTokenSource.Token.Register(() =>
+        {
             Notes.Text = "Cancellation requested";
         });
         Search.Content = "Cancel"; // Button text
 
+
         BeforeLoadingStockData();
+
+        var identifiers = StockIdentifier.Text
+                                            .Split(',', ' ');
 
         var service = new StockService();
 
-        var data = await service.GetStockPricesFor(StockIdentifier.Text, cancellationTokenSource.Token);
-        Stocks.ItemsSource = data;
+        var loadingTasks = new List<Task<IEnumerable<StockPrice>>>();
+        var stocks = new ConcurrentBag<StockPrice>();
+
+        foreach (var identifier in identifiers)
+        {
+            var loadTask = service.GetStockPricesFor(identifier,
+                cancellationTokenSource.Token);
+
+            loadTask = loadTask.ContinueWith(t =>
+            {
+                var aFewStocks = t.Result.Take(5);
+
+                foreach(var stock in aFewStocks)
+                {
+                    stocks.Add(stock);
+                }
+
+                Dispatcher.Invoke(() => {
+                    Stocks.ItemsSource = stocks.ToArray();
+                });
+
+                return aFewStocks;
+            });
+
+            loadingTasks.Add(loadTask);
+        }
+
+        var timeoutTask = Task.Delay(120000);
+        var allStocksLoadingTask = Task.WhenAll(loadingTasks);
+
+        var completedTask = await Task.WhenAny(timeoutTask, 
+            allStocksLoadingTask);
+
+        if(completedTask == timeoutTask)
+        {
+            cancellationTokenSource.Cancel();
+            throw new OperationCanceledException("Timeout!");
+        }
+
+
     }
     catch (Exception ex)
     {

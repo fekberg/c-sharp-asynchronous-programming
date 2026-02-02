@@ -1,5 +1,4 @@
-﻿using System.Text.Json;
-using StockAnalyzer.Core;
+﻿using StockAnalyzer.Core;
 using StockAnalyzer.Core.Domain;
 using StockAnalyzer.Core.Services;
 using StockAnalyzer.Windows.Services;

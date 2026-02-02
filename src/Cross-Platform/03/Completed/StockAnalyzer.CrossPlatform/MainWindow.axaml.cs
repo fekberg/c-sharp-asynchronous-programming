@@ -3,7 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
-using Newtonsoft.Json;
+using System.Text.Json;
 using StockAnalyzer.Core;
 using StockAnalyzer.Core.Domain;
 using StockAnalyzer.Core.Services;
@@ -11,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Runtime.InteropServices;
@@ -29,7 +30,6 @@ public partial class MainWindow : Window
         IEX_Terms.PointerPressed += (e, a) => Open("https://iextrading.com/api-exhibit-a/");
 
         /// Data provided for free by <a href="https://iextrading.com/developer/" RequestNavigate="Hyperlink_OnRequestNavigate">IEX</Hyperlink>. View <Hyperlink NavigateUri="https://iextrading.com/api-exhibit-a/" RequestNavigate="Hyperlink_OnRequestNavigate">IEX’s Terms of Use.</Hyperlink>
-
     }
 
 
@@ -41,47 +41,30 @@ public partial class MainWindow : Window
 
     private async void Search_Click(object sender, RoutedEventArgs e)
     {
-        if (cancellationTokenSource != null)
-        {
-            // Already have an instance of the cancellation token source?
-            // This means the button has already been pressed!
-
-            cancellationTokenSource.Cancel();
-            cancellationTokenSource.Dispose();
-            cancellationTokenSource = null;
-
-            Search.Content = "Search";
-            return;
-        }
-
         try
         {
-            cancellationTokenSource = new CancellationTokenSource();
-            cancellationTokenSource.Token.Register(() => {
-                Notes.Text = "Cancellation requested";
-            });
-            Search.Content = "Cancel"; // Button text
+            var data = await GetStocksFor(StockIdentifier.Text);
 
-            BeforeLoadingStockData();
+            Notes.Text = "Stocks loaded!";
 
-            var service = new StockService();
-
-            var data = await service.GetStockPricesFor(StockIdentifier.Text, cancellationTokenSource.Token);
             Stocks.ItemsSource = data;
         }
         catch (Exception ex)
         {
             Notes.Text = ex.Message;
         }
-        finally
-        {
-            AfterLoadingStockData();
+    }
 
-            cancellationTokenSource?.Dispose();
-            cancellationTokenSource = null;
+    private async Task<IEnumerable<StockPrice>>
+        GetStocksFor(string identifier)
+    {
+        var service = new StockService();
+        var data = await service.GetStockPricesFor(identifier,
+            CancellationToken.None).ConfigureAwait(false);
 
-            Search.Content = "Search";
-        }
+
+
+        return data.Take(5);
     }
 
     private static Task<List<string>>

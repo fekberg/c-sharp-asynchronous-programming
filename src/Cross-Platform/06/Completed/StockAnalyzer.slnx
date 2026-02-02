@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="StockAnalyzer.Core/StockAnalyzer.Core.csproj" />
+  <Project Path="StockAnalyzer.CrossPlatform/StockAnalyzer.CrossPlatform.csproj" />
+  <Project Path="StockAnalyzer.Tests/StockAnalyzer.Tests.csproj" />
+  <Project Path="StockAnalyzer.Web/StockAnalyzer.Web.csproj" />
+</Solution>

@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using Microsoft.VisualBasic;
+using System.Text.Json;
 using StockAnalyzer.Core.Domain;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,7 +21,7 @@ public class StockService : IStockService
     private int i = 0;
 
     public async Task<IEnumerable<StockPrice>>
-        GetStockPricesFor(string stockIdentifier, 
+        GetStockPricesFor(string stockIdentifier,
                           CancellationToken cancellationToken)
     {
         // Simulate that each time this method is called
@@ -38,38 +39,38 @@ public class StockService : IStockService
 
             var content = await result.Content.ReadAsStringAsync();
 
-            return JsonConvert.DeserializeObject<IEnumerable<StockPrice>>(content);
+            return JsonSerializer.Deserialize<IEnumerable<StockPrice>>(content, JsonSerializerOptions.Web);
         }
     }
 }
 
 public class MockStockService : IStockService
 {
-    public Task<IEnumerable<StockPrice>> 
+    public Task<IEnumerable<StockPrice>>
         GetStockPricesFor(string stockIdentifier, 
         CancellationToken cancellationToken)
     {
         var stocks = new List<StockPrice>
         {
-            new StockPrice
+            new()
             {
                 Identifier = "MSFT",
                 Change = 0.5m,
                 ChangePercent = 0.75m
             },
-            new StockPrice
+            new()
             {
                 Identifier = "MSFT",
                 Change = 0.5m,
                 ChangePercent = 0.75m
             },
-            new StockPrice
+            new()
             {
                 Identifier = "GOOGL",
                 Change = 0.5m,
                 ChangePercent = 0.75m
             },
-            new StockPrice
+            new()
             {
                 Identifier = "GOOGL",
                 Change = 0.5m,
@@ -78,6 +79,7 @@ public class MockStockService : IStockService
         };
 
         var task = Task.FromResult(stocks.Where(stock => stock.Identifier == stockIdentifier));
+
         return task;
     }
 }
