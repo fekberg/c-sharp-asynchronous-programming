@@ -1,4 +1,4 @@
-# m4-2
+# m3-2
 
 ```
 private async void Search_Click(object sender, RoutedEventArgs e)
@@ -76,7 +76,7 @@ private async void Search_Click(object sender, RoutedEventArgs e)
 ```
 
 
-# m4-3
+# m3-3
 
 ```
 public class MockStockService : IStockService
@@ -207,7 +207,7 @@ private async void Search_Click(object sender, RoutedEventArgs e)
 ```
 
 
-# m4-4
+# m3-4
 
 ```
 private async void Search_Click(object sender, RoutedEventArgs e)
