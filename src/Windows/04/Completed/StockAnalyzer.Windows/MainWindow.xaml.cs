@@ -44,6 +44,24 @@ public partial class MainWindow : Window
             Notes.Text = ex.Message;
         }
     }
+    
+    private async Task SearchForStocks()
+    {
+        var service = new StockService();
+        var loadingTasks = new List<Task<IEnumerable<StockPrice>>>();
+
+        foreach(var identifier in StockIdentifier.Text.Split(' ', ','))
+        {
+            var loadTask = service.GetStockPricesFor(identifier,
+                CancellationToken.None);
+
+            loadingTasks.Add(loadTask);
+        }
+
+        var data = await Task.WhenAll(loadingTasks);
+
+        Stocks.ItemsSource = data.SelectMany(stock => stock);
+    }
 
     private async Task SearchForStocks()
     {

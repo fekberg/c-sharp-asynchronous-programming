@@ -6,12 +6,16 @@ public class StateMachineDemo
 {
     public async Task<string> Run() 
     {
-        return await Compute();
+        var resultTask = Compute();
+
+        return await resultTask;
     }
 
     public async Task<string> Compute()
     {
-        return await Load();
+        var result = await Load();
+
+        return result;
     }
 
     public async Task<string> Load()

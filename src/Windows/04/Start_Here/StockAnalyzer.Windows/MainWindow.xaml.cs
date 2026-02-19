@@ -32,19 +32,64 @@ public partial class MainWindow : Window
 
     private async void Search_Click(object sender, RoutedEventArgs e)
     {
-        try
-        {
-            var data = await GetStocksFor(StockIdentifier.Text);
-
-            Notes.Text = "Stocks loaded!";
-
-            Stocks.ItemsSource = data;
-        }
-        catch(Exception ex)
-        {
-            Notes.Text = ex.Message;
-        }
     }
+
+    private async Task SearchForStocks()
+    {
+        var service = new StockService();
+        var loadingTasks = new List<Task<IEnumerable<StockPrice>>>();
+
+        foreach (var identifier in StockIdentifier.Text.Split(' ', ','))
+        {
+            var loadTask = service.GetStockPricesFor(identifier,
+                CancellationToken.None);
+
+            loadingTasks.Add(loadTask);
+        }
+
+        var data = await Task.WhenAll(loadingTasks);
+
+        Stocks.ItemsSource = data.SelectMany(stock => stock);
+    }
+
+    private static Task<List<string>> SearchForStocks(
+        CancellationToken cancellationToken
+    )
+    {
+        return Task.Run(async () =>
+        {
+            using var stream = new StreamReader(File.OpenRead("StockPrices_Small.csv"));
+
+            var lines = new List<string>();
+
+            while (await stream.ReadLineAsync() is string line)
+            {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    break;
+                }
+                lines.Add(line);
+            }
+
+            return lines;
+        }, cancellationToken);
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     private async Task<IEnumerable<StockPrice>>
         GetStocksFor(string identifier)
@@ -67,32 +112,6 @@ public partial class MainWindow : Window
 
 
 
-
-
-
-
-    private static Task<List<string>> SearchForStocks(
-        CancellationToken cancellationToken    
-    )
-    {
-        return Task.Run(async () =>
-        {
-            using var stream = new StreamReader(File.OpenRead("StockPrices_Small.csv"));
-
-            var lines = new List<string>();
-
-            while (await stream.ReadLineAsync() is string line)
-            {
-                if(cancellationToken.IsCancellationRequested)
-                {
-                    break;
-                }
-                lines.Add(line);
-            }
-
-            return lines;
-        }, cancellationToken);
-    }
 
     private async Task GetStocks()
     {
