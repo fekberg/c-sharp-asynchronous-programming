@@ -29,6 +29,11 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
     }
+
+
+
+
+
     private async void Search_Click(object sender, RoutedEventArgs e)
     {
         BeforeLoadingStockData();
@@ -37,21 +42,12 @@ public partial class MainWindow : Window
             {
                 { "MSFT", Generate("MSFT") },
                 { "GOOGL", Generate("GOOGL") },
-                { "PS", Generate("PS") },
-                { "AMAZ", Generate("AMAZ") }
+                { "AAPL", Generate("AAPL") },
+                { "CAT", Generate("CAT") }
             };
+        
 
         AfterLoadingStockData();
-    }
-
-    private IEnumerable<StockPrice> Generate(string stockIdentifier)
-    {
-        return Enumerable.Range(1, random.Next(10, 250))
-            .Select(x => new StockPrice
-            {
-                Identifier = stockIdentifier,
-                Open = random.Next(10, 1024)
-            });
     }
 
     private StockCalculation Calculate(IEnumerable<StockPrice> prices)
@@ -79,6 +75,26 @@ public partial class MainWindow : Window
         return calculation;
         #endregion
     }
+
+    private IEnumerable<StockPrice> Generate(string stockIdentifier)
+    {
+        return Enumerable.Range(1, random.Next(10, 250))
+            .Select(x => new StockPrice
+            {
+                Identifier = stockIdentifier,
+                Open = random.Next(10, 1024)
+            });
+    }
+
+
+
+
+
+
+
+
+
+
 
 
     private void BeforeLoadingStockData()
